@@ -26,7 +26,9 @@ export default function Builder({ onSaved, initialWorkout }) {
     const result = parseQuickInput(quickInput)
     if (result.error) { setQuickError(result.error); return }
     setQuickError('')
-    const newSegs = [DEFAULT_WARMUP, ...result.segments, DEFAULT_COOLDOWN]
+    const newSegs = [DEFAULT_WARMUP, ...result.segments, DEFAULT_COOLDOWN].map(s => ({
+      ...s, _id: uuidv4()
+    }))
     setSegments(newSegs)
     setQuickInput('')
     if (!name) setName(quickInput.trim())
@@ -37,7 +39,7 @@ export default function Builder({ onSaved, initialWorkout }) {
       setSegments(prev => prev.map((s, i) => i === editIndex ? seg : s))
       setEditIndex(null)
     } else {
-      setSegments(prev => [...prev, seg])
+      setSegments(prev => [...prev, { ...seg, _id: uuidv4() }])
     }
     setShowForm(false)
   }
@@ -47,6 +49,7 @@ export default function Builder({ onSaved, initialWorkout }) {
   }
 
   async function handlePush() {
+    if (segments.length === 0) return
     if (!creds.email || !creds.password) {
       setPushResult({ error: 'Ingen Garmin-innlogging. Åpne Innstillinger.' })
       return
@@ -109,7 +112,7 @@ export default function Builder({ onSaved, initialWorkout }) {
       <div className="flex flex-col gap-2 mb-3">
         {segments.map((seg, i) => (
           <SegmentCard
-            key={i} segment={seg}
+            key={seg._id || i} segment={seg}
             onDelete={() => deleteSegment(i)}
             onEdit={() => { setEditIndex(i); setShowForm(true) }}
           />

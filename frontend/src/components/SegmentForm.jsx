@@ -34,7 +34,12 @@ export default function SegmentForm({ initial, onSave, onCancel }) {
     }
     if (form.type === 'interval') seg.repeat = parseInt(form.repeat || 1)
     if (form.hrZone) seg.hrZone = parseInt(form.hrZone)
-    if (form.paceTarget) seg.paceTarget = form.paceTarget
+    if (form.paceTarget) {
+      if (/^\d+:\d{2}$/.test(form.paceTarget)) {
+        seg.paceTarget = form.paceTarget
+      }
+      // silently ignore invalid pace format
+    }
     onSave(seg)
   }
 
