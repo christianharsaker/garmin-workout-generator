@@ -20,6 +20,10 @@ export default function Builder({ onSaved, initialWorkout }) {
   const [addToLib, setAddToLib] = useState(false)
   const [pushing, setPushing] = useState(false)
   const [pushResult, setPushResult] = useState(null)
+  const [mfaRequired, setMfaRequired] = useState(false)
+  const [mfaInput, setMfaInput] = useState('')
+  const [pendingSessionId, setPendingSessionId] = useState(null)
+  const [pendingWorkout, setPendingWorkout] = useState(null)
   const creds = useGarminCreds()
 
   function handleQuickParse() {
@@ -48,24 +52,41 @@ export default function Builder({ onSaved, initialWorkout }) {
     setSegments(prev => prev.filter((_, idx) => idx !== i))
   }
 
-  async function handlePush() {
+  async function handlePush(mfaCode = null, sessionId = null) {
     if (segments.length === 0) return
     if (!creds.email || !creds.password) {
       setPushResult({ error: 'Ingen Garmin-innlogging. Åpne Innstillinger.' })
       return
     }
-    const workout = { id: uuidv4(), name: name || 'Treningsøkt', segments }
+    const workout = pendingWorkout || { id: uuidv4(), name: name || 'Treningsøkt', segments }
     setPushing(true)
     setPushResult(null)
     try {
-      await pushWorkout({ garminEmail: creds.email, garminPassword: creds.password, workout })
+      const data = await pushWorkout({
+        garminEmail: creds.email, garminPassword: creds.password,
+        workout, mfaCode, sessionId,
+      })
+      if (data.status === 'mfa_required') {
+        setPendingSessionId(data.sessionId)
+        setPendingWorkout(workout)
+        setMfaRequired(true)
+        return
+      }
       setPushResult({ ok: true })
+      setMfaRequired(false)
+      setPendingSessionId(null)
+      setPendingWorkout(null)
+      setMfaInput('')
       onSaved(workout, addToLib)
     } catch (e) {
       setPushResult({ error: e.message })
     } finally {
       setPushing(false)
     }
+  }
+
+  function handleMfaSubmit() {
+    handlePush(mfaInput, pendingSessionId)
   }
 
   return (
@@ -138,10 +159,31 @@ export default function Builder({ onSaved, initialWorkout }) {
             <p className="text-sm text-red-500 mb-3 text-center">{pushResult.error}</p>
           )}
 
-          <button onClick={handlePush} disabled={pushing}
-            className="w-full py-3.5 rounded-2xl bg-gray-900 text-white text-base font-semibold disabled:opacity-50">
-            {pushing ? 'Sender...' : 'Send til Garmin 🏃'}
-          </button>
+          {mfaRequired ? (
+            <div className="bg-gray-50 rounded-2xl p-4 mb-2">
+              <p className="text-sm font-semibold text-gray-900 mb-1">Bekreft med engangskode</p>
+              <p className="text-xs text-gray-400 mb-3">Garmin sendte en kode til din e-post.</p>
+              <div className="flex gap-2">
+                <input
+                  type="text" inputMode="numeric" value={mfaInput}
+                  onChange={e => setMfaInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleMfaSubmit()}
+                  placeholder="123456"
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-center tracking-widest"
+                  autoFocus
+                />
+                <button onClick={handleMfaSubmit} disabled={pushing || !mfaInput}
+                  className="px-5 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold disabled:opacity-50">
+                  {pushing ? '...' : 'OK'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => handlePush()} disabled={pushing}
+              className="w-full py-3.5 rounded-2xl bg-gray-900 text-white text-base font-semibold disabled:opacity-50">
+              {pushing ? 'Sender...' : 'Send til Garmin 🏃'}
+            </button>
+          )}
         </>
       )}
     </div>

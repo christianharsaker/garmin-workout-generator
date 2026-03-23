@@ -9,13 +9,13 @@ export async function wakeBackend() {
   }
 }
 
-export async function pushWorkout({ garminEmail, garminPassword, workout }) {
+export async function pushWorkout({ garminEmail, garminPassword, workout, mfaCode, sessionId }) {
   const res = await fetch(`${API_BASE}/push`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ garminEmail, garminPassword, workout }),
+    body: JSON.stringify({ garminEmail, garminPassword, workout, mfaCode, sessionId }),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.detail || 'Push failed')
-  return data
+  return data  // { status: 'ok', ... } or { status: 'mfa_required', sessionId: '...' }
 }

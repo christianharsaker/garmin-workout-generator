@@ -1,4 +1,12 @@
+import uuid
 from garminconnect import Garmin
+
+_sessions: dict = {}
+
+
+class MFARequired(Exception):
+    def __init__(self, session_id: str):
+        self.session_id = session_id
 
 STEP_TYPE_MAP = {
     'warmup':   {'stepTypeId': 1, 'stepTypeKey': 'warmup'},
@@ -84,9 +92,36 @@ def build_garmin_workout(workout):
     }
 
 
-def push_workout(email: str, password: str, workout: dict) -> dict:
-    client = Garmin(email, password)
-    client.login()
+def push_workout(
+    email: str,
+    password: str,
+    workout: dict,
+    *,
+    mfa_code: str | None = None,
+    session_id: str | None = None,
+) -> dict:
+    if session_id and mfa_code:
+        session = _sessions.pop(session_id, None)
+        if session is None:
+            raise ValueError('Session utløpt — prøv igjen.')
+        client = session['client']
+        workout = session['workout']
+        client.garth.resume_login(otp_code=mfa_code)
+    else:
+        class _MFANeeded(Exception):
+            pass
+
+        def _prompt_mfa():
+            raise _MFANeeded()
+
+        client = Garmin(email, password, prompt_mfa=_prompt_mfa)
+        try:
+            client.login()
+        except _MFANeeded:
+            sid = str(uuid.uuid4())
+            _sessions[sid] = {'client': client, 'workout': workout}
+            raise MFARequired(sid)
+
     payload = build_garmin_workout(workout)
     result = client.add_workout(payload)
     return result
