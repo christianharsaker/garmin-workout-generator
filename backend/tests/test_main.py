@@ -40,6 +40,17 @@ def test_push_invalid_credentials():
     assert response.status_code == 401
 
 
+def test_push_connection_error():
+    from garminconnect import GarminConnectConnectionError
+    with patch('main.push_workout', side_effect=GarminConnectConnectionError('timeout')):
+        response = client.post('/push', json={
+            'garminEmail': 'test@example.com',
+            'garminPassword': 'secret',
+            'workout': {'name': 'Test', 'segments': []}
+        })
+    assert response.status_code == 503
+
+
 def test_push_missing_fields():
     response = client.post('/push', json={'garminEmail': 'x@x.com'})
     assert response.status_code == 422
