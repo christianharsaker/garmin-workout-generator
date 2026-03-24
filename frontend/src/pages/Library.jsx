@@ -16,28 +16,63 @@ function segmentSummary(segments) {
 export default function Library({ workouts, onLoad, onDelete }) {
   if (workouts.length === 0) {
     return (
-      <div className="px-4 py-16 text-center">
-        <p className="text-gray-400 text-sm">Ingen lagrede økter ennå.</p>
-        <p className="text-gray-300 text-xs mt-1">Bygg en økt og kryss av "Legg til bibliotek".</p>
+      <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.3 }}>📚</div>
+        <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 4 }}>Ingen lagrede økter ennå.</p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Bygg en økt og aktiver "Lagre i bibliotek".</p>
       </div>
     )
   }
 
   return (
-    <div className="px-4 py-5 max-w-lg mx-auto flex flex-col gap-3">
+    <div style={{ padding: '8px 20px 32px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       {workouts.map(w => (
-        <div key={w.id} className="bg-white border border-gray-100 rounded-2xl p-4">
-          <div className="flex items-start justify-between mb-2">
+        <div
+          key={w.id}
+          className="fade-up"
+          style={{
+            background: 'var(--surface)',
+            borderRadius: 16,
+            padding: '14px 16px',
+            border: '1px solid var(--text-3)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
             <div>
-              <p className="text-sm font-bold text-gray-900">{w.name || 'Uten navn'}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{segmentSummary(w.segments)}</p>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                {w.name || 'Uten navn'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, letterSpacing: '0.02em' }}>
+                {segmentSummary(w.segments)}
+              </div>
             </div>
-            <button onClick={() => onDelete(w.id)} className="text-gray-200 hover:text-red-400 text-lg ml-2">×</button>
+            <button
+              onClick={() => onDelete(w.id)}
+              style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 20, cursor: 'pointer', padding: '0 0 0 8px', lineHeight: 1, flexShrink: 0 }}
+            >
+              ×
+            </button>
           </div>
           <WorkoutDiagram segments={w.segments} />
-          <button onClick={() => onLoad(w)}
-            className="mt-3 w-full py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            Last inn i byggeren
+          <button
+            onClick={() => onLoad(w)}
+            style={{
+              marginTop: 12,
+              width: '100%',
+              padding: '10px',
+              borderRadius: 10,
+              border: '1px solid var(--text-3)',
+              background: 'transparent',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 13,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: 'var(--text-2)',
+              cursor: 'pointer',
+            }}
+          >
+            Last inn →
           </button>
         </div>
       ))}

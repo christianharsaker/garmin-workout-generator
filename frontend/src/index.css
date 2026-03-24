@@ -1,3 +1,62 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --bg: #0C0C0E;
+  --surface: #141416;
+  --surface-2: #1C1C1F;
+  --surface-3: #252529;
+  --accent: #B8FF3C;
+  --accent-dim: rgba(184, 255, 60, 0.1);
+  --accent-border: rgba(184, 255, 60, 0.22);
+  --text: #EDEDF0;
+  --text-2: #7A7A86;
+  --text-3: #36363D;
+  --warmup: #60A5FA;
+  --interval: #FB923C;
+  --rest: #4ADE80;
+  --cooldown: #C084FC;
+  --danger: #F87171;
+  --font-display: 'Barlow Condensed', system-ui, sans-serif;
+  --font-body: 'DM Sans', -apple-system, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  height: 100%;
+}
+
+#root { height: 100%; }
+::-webkit-scrollbar { width: 0; }
+
+input, button, select, textarea { font-family: inherit; }
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100px var(--surface-2) inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fadeUp 0.22s ease-out both;
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

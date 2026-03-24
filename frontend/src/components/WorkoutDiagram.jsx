@@ -1,11 +1,15 @@
-const SEGMENT_COLORS = {
-  warmup:   'bg-blue-400',
-  interval: 'bg-orange-400',
-  rest:     'bg-green-400',
-  cooldown: 'bg-purple-400',
+const COLORS = {
+  warmup:   '#60A5FA',
+  interval: '#FB923C',
+  rest:     '#4ADE80',
+  cooldown: '#C084FC',
 }
 
-const LAP_WEIGHT = 0.15  // lap segments get 15% of total width each
+const LABELS = {
+  warmup: 'Oppv', interval: 'Int', rest: 'Pause', cooldown: 'Nedj',
+}
+
+const LAP_WEIGHT = 0.15
 
 function totalWeight(segments) {
   return segments.reduce((acc, seg) => {
@@ -23,31 +27,50 @@ export default function WorkoutDiagram({ segments }) {
   if (total === 0) return null
 
   const bars = segments.flatMap(seg => {
-    const color = SEGMENT_COLORS[seg.type] || 'bg-gray-300'
+    const color = COLORS[seg.type] || '#555'
     if (seg.durationType === 'lap') {
-      return [{ color, flex: LAP_WEIGHT, label: seg.type === 'warmup' ? 'Oppv' : 'Nedj' }]
+      return [{ color, flex: LAP_WEIGHT, label: LABELS[seg.type] || seg.type, dim: false }]
     }
     if (seg.type === 'interval' && seg.repeat > 1) {
-      // Show alternating interval + rest blocks if there are many repeats, else one block
       return Array.from({ length: seg.repeat }, (_, i) => ({
-        color,
-        flex: seg.duration,
+        color, flex: seg.duration,
         label: i === 0 ? `×${seg.repeat}` : '',
+        dim: i % 2 !== 0,
       }))
     }
-    return [{ color, flex: seg.duration || 0, label: '' }]
+    return [{ color, flex: seg.duration || 0, label: LABELS[seg.type] || '', dim: false }]
   })
 
   return (
-    <div className="w-full rounded-lg overflow-hidden flex h-8 gap-0.5">
+    <div style={{ width: '100%', borderRadius: 10, overflow: 'hidden', display: 'flex', height: 52, gap: 2 }}>
       {bars.map((bar, i) => (
         <div
           key={i}
-          className={`${bar.color} flex items-center justify-center text-white text-[9px] font-bold overflow-hidden`}
-          style={{ flex: bar.flex / total }}
-          title={bar.label}
+          style={{
+            flex: bar.flex / total,
+            background: bar.color,
+            opacity: bar.dim ? 0.6 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            minWidth: 0,
+          }}
         >
-          {bar.label}
+          {bar.label && (
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 11,
+              color: 'rgba(0,0,0,0.65)',
+              letterSpacing: '0.04em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'clip',
+            }}>
+              {bar.label}
+            </span>
+          )}
         </div>
       ))}
     </div>

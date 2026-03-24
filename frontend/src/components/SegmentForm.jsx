@@ -1,10 +1,10 @@
 import { useState } from 'react'
 
 const SEGMENT_TYPES = [
-  { value: 'warmup', label: 'Oppvarming' },
-  { value: 'interval', label: 'Intervall' },
-  { value: 'rest', label: 'Pause' },
-  { value: 'cooldown', label: 'Nedjogg' },
+  { value: 'warmup', label: 'Oppvarming', color: 'var(--warmup)' },
+  { value: 'interval', label: 'Intervall', color: 'var(--interval)' },
+  { value: 'rest', label: 'Pause', color: 'var(--rest)' },
+  { value: 'cooldown', label: 'Nedjogg', color: 'var(--cooldown)' },
 ]
 
 const empty = () => ({
@@ -14,6 +14,30 @@ const empty = () => ({
 
 function toSeconds(mins, secs) {
   return (parseInt(mins || 0) * 60) + parseInt(secs || 0)
+}
+
+const inputStyle = {
+  width: '100%',
+  background: 'var(--surface-2)',
+  border: '1px solid var(--text-3)',
+  borderRadius: 10,
+  padding: '11px 14px',
+  fontSize: 14,
+  color: 'var(--text)',
+  outline: 'none',
+  fontFamily: 'var(--font-body)',
+  transition: 'border-color 0.15s',
+}
+
+const labelStyle = {
+  display: 'block',
+  fontSize: 10,
+  fontWeight: 600,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: 'var(--text-2)',
+  marginBottom: 6,
+  fontFamily: 'var(--font-display)',
 }
 
 export default function SegmentForm({ initial, onSave, onCancel }) {
@@ -38,7 +62,6 @@ export default function SegmentForm({ initial, onSave, onCancel }) {
       if (/^\d+:\d{2}$/.test(form.paceTarget)) {
         seg.paceTarget = form.paceTarget
       }
-      // silently ignore invalid pace format
     }
     onSave(seg)
   }
@@ -47,60 +70,140 @@ export default function SegmentForm({ initial, onSave, onCancel }) {
     (form.durationType === 'distance' && parseFloat(form.durationKm) > 0) ||
     (form.durationType === 'time' && toSeconds(form.durationMins, form.durationSecs) > 0)
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onCancel}>
-      <div className="bg-white rounded-t-2xl w-full max-w-lg p-6 pb-8" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-900 mb-4">Segment</h3>
+  const activeType = SEGMENT_TYPES.find(t => t.value === form.type)
 
-        {/* Type */}
-        <div className="flex gap-2 mb-4 flex-wrap">
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          background: 'var(--surface)',
+          borderRadius: '20px 20px 0 0',
+          width: '100%',
+          maxWidth: 480,
+          padding: '24px 24px',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 24px)',
+          borderTop: '1px solid var(--text-3)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--text-3)', margin: '0 auto 20px' }} />
+
+        <div style={{
+          fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22,
+          color: activeType?.color || 'var(--text)',
+          letterSpacing: '-0.01em', marginBottom: 20,
+          transition: 'color 0.15s',
+        }}>
+          Segment
+        </div>
+
+        {/* Type picker */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
           {SEGMENT_TYPES.map(t => (
-            <button key={t.value} onClick={() => set('type', t.value)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors
-                ${form.type === t.value ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600'}`}>
+            <button
+              key={t.value}
+              onClick={() => set('type', t.value)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: `1.5px solid ${form.type === t.value ? t.color : 'var(--text-3)'}`,
+                background: form.type === t.value ? `${t.color}18` : 'transparent',
+                color: form.type === t.value ? t.color : 'var(--text-2)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 12,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.12s',
+              }}
+            >
               {t.label}
             </button>
           ))}
         </div>
 
         {/* Lap toggle */}
-        <label className="flex items-center gap-2 mb-4 cursor-pointer">
-          <input type="checkbox" checked={form.untilLap} onChange={e => set('untilLap', e.target.checked)} className="w-4 h-4" />
-          <span className="text-sm text-gray-700">Til Lap (åpen varighet)</span>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, cursor: 'pointer' }}>
+          <div
+            onClick={() => set('untilLap', !form.untilLap)}
+            style={{
+              width: 20, height: 20, borderRadius: 6,
+              background: form.untilLap ? 'var(--accent)' : 'var(--surface-2)',
+              border: form.untilLap ? 'none' : '1.5px solid var(--text-3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'background 0.15s',
+            }}
+          >
+            {form.untilLap && (
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <polyline points="2 6 5 9 10 3" stroke="#0C0C0E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
+          <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Til Lap (åpen varighet)</span>
         </label>
 
         {!form.untilLap && (
           <>
-            {/* Duration type */}
-            <div className="flex gap-2 mb-3">
-              <button onClick={() => set('durationType', 'time')}
-                className={`flex-1 py-1.5 rounded-lg text-sm border ${form.durationType === 'time' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600'}`}>
-                Tid
-              </button>
-              <button onClick={() => set('durationType', 'distance')}
-                className={`flex-1 py-1.5 rounded-lg text-sm border ${form.durationType === 'distance' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600'}`}>
-                Distanse
-              </button>
+            {/* Duration type toggle */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+              {['time', 'distance'].map(dt => (
+                <button
+                  key={dt}
+                  onClick={() => set('durationType', dt)}
+                  style={{
+                    flex: 1,
+                    padding: '9px',
+                    borderRadius: 10,
+                    border: `1.5px solid ${form.durationType === dt ? 'var(--accent-border)' : 'var(--text-3)'}`,
+                    background: form.durationType === dt ? 'var(--accent-dim)' : 'transparent',
+                    color: form.durationType === dt ? 'var(--accent)' : 'var(--text-2)',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  {dt === 'time' ? 'Tid' : 'Distanse'}
+                </button>
+              ))}
             </div>
 
             {form.durationType === 'time' ? (
-              <div className="flex gap-2 mb-4">
-                <div className="flex-1">
-                  <label className="text-xs text-gray-400 mb-1 block">Minutter</label>
-                  <input type="number" min="0" value={form.durationMins} onChange={e => set('durationMins', e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="0" />
+              <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Minutter</label>
+                  <input
+                    type="number" min="0" value={form.durationMins}
+                    onChange={e => set('durationMins', e.target.value)}
+                    style={inputStyle} placeholder="0"
+                  />
                 </div>
-                <div className="flex-1">
-                  <label className="text-xs text-gray-400 mb-1 block">Sekunder</label>
-                  <input type="number" min="0" max="59" value={form.durationSecs} onChange={e => set('durationSecs', e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="0" />
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Sekunder</label>
+                  <input
+                    type="number" min="0" max="59" value={form.durationSecs}
+                    onChange={e => set('durationSecs', e.target.value)}
+                    style={inputStyle} placeholder="0"
+                  />
                 </div>
               </div>
             ) : (
-              <div className="mb-4">
-                <label className="text-xs text-gray-400 mb-1 block">Kilometer</label>
-                <input type="number" min="0" step="0.1" value={form.durationKm} onChange={e => set('durationKm', e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="1.0" />
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Kilometer</label>
+                <input
+                  type="number" min="0" step="0.1" value={form.durationKm}
+                  onChange={e => set('durationKm', e.target.value)}
+                  style={inputStyle} placeholder="1.0"
+                />
               </div>
             )}
           </>
@@ -108,34 +211,80 @@ export default function SegmentForm({ initial, onSave, onCancel }) {
 
         {/* Repeat (interval only) */}
         {form.type === 'interval' && (
-          <div className="mb-4">
-            <label className="text-xs text-gray-400 mb-1 block">Repetisjoner</label>
-            <input type="number" min="1" value={form.repeat} onChange={e => set('repeat', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Repetisjoner</label>
+            <input
+              type="number" min="1" value={form.repeat}
+              onChange={e => set('repeat', e.target.value)}
+              style={inputStyle}
+            />
           </div>
         )}
 
         {/* Advanced */}
-        <details className="mb-4">
-          <summary className="text-xs text-gray-400 cursor-pointer">Avansert (pulssone / pace)</summary>
-          <div className="mt-2 flex gap-2">
-            <div className="flex-1">
-              <label className="text-xs text-gray-400 mb-1 block">Pulssone (1–5)</label>
-              <input type="number" min="1" max="5" value={form.hrZone} onChange={e => set('hrZone', e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="—" />
+        <details style={{ marginBottom: 20 }}>
+          <summary style={{
+            fontSize: 11, color: 'var(--text-2)', cursor: 'pointer',
+            fontFamily: 'var(--font-display)', fontWeight: 600,
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+            userSelect: 'none',
+          }}>
+            Avansert (pulssone / pace)
+          </summary>
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Pulssone (1–5)</label>
+              <input
+                type="number" min="1" max="5" value={form.hrZone}
+                onChange={e => set('hrZone', e.target.value)}
+                style={inputStyle} placeholder="—"
+              />
             </div>
-            <div className="flex-1">
-              <label className="text-xs text-gray-400 mb-1 block">Pace (mm:ss/km)</label>
-              <input type="text" value={form.paceTarget} onChange={e => set('paceTarget', e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="4:30" />
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Pace (mm:ss/km)</label>
+              <input
+                type="text" value={form.paceTarget}
+                onChange={e => set('paceTarget', e.target.value)}
+                style={inputStyle} placeholder="4:30"
+              />
             </div>
           </div>
         </details>
 
-        <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 py-3 rounded-xl border border-gray-200 text-sm text-gray-500">Avbryt</button>
-          <button onClick={handleSave} disabled={!canSave}
-            className="flex-1 py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold disabled:opacity-40">
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1, padding: '13px',
+              borderRadius: 14,
+              border: '1px solid var(--text-3)',
+              background: 'transparent',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700, fontSize: 14,
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              color: 'var(--text-2)', cursor: 'pointer',
+            }}
+          >
+            Avbryt
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            style={{
+              flex: 2, padding: '13px',
+              borderRadius: 14,
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#0C0C0E',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 900, fontSize: 16,
+              letterSpacing: '0.04em',
+              cursor: canSave ? 'pointer' : 'default',
+              opacity: canSave ? 1 : 0.35,
+              transition: 'opacity 0.15s',
+            }}
+          >
             Lagre
           </button>
         </div>
