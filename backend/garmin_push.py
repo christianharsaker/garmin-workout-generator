@@ -1,7 +1,8 @@
 import uuid
 from garminconnect import Garmin
 
-_sessions: dict = {}
+_sessions: dict = {}          # MFA pending sessions: sid -> {client, workout}
+_token_cache: dict = {}       # reusable sessions: email -> garth token string
 
 
 class MFARequired(Exception):
@@ -92,6 +93,40 @@ def build_garmin_workout(workout):
     }
 
 
+def _login_fresh(email: str, password: str) -> Garmin:
+    """Log in and cache the session token. Raises MFARequired if OTP is needed."""
+    class _MFANeeded(Exception):
+        pass
+
+    def _prompt_mfa():
+        raise _MFANeeded()
+
+    client = Garmin(email, password, prompt_mfa=_prompt_mfa)
+    try:
+        client.login()
+    except _MFANeeded:
+        sid = str(uuid.uuid4())
+        _sessions[sid] = {'client': client}
+        raise MFARequired(sid)
+
+    _token_cache[email] = client.garth.dumps()
+    return client
+
+
+def _get_client(email: str, password: str) -> Garmin:
+    """Return an authenticated Garmin client, reusing cached tokens if possible."""
+    if email in _token_cache:
+        client = Garmin(email, password)
+        try:
+            client.garth.loads(_token_cache[email])
+            client.get_full_name()  # lightweight check that the session is still valid
+            return client
+        except Exception:
+            del _token_cache[email]
+
+    return _login_fresh(email, password)
+
+
 def push_workout(
     email: str,
     password: str,
@@ -105,22 +140,10 @@ def push_workout(
         if session is None:
             raise ValueError('Session utløpt — prøv igjen.')
         client = session['client']
-        workout = session['workout']
         client.garth.resume_login(otp_code=mfa_code)
+        _token_cache[email] = client.garth.dumps()
     else:
-        class _MFANeeded(Exception):
-            pass
-
-        def _prompt_mfa():
-            raise _MFANeeded()
-
-        client = Garmin(email, password, prompt_mfa=_prompt_mfa)
-        try:
-            client.login()
-        except _MFANeeded:
-            sid = str(uuid.uuid4())
-            _sessions[sid] = {'client': client, 'workout': workout}
-            raise MFARequired(sid)
+        client = _get_client(email, password)
 
     payload = build_garmin_workout(workout)
     result = client.add_workout(payload)
